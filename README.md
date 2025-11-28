@@ -18,3 +18,10 @@ View your app in AI Studio: https://ai.studio/apps/drive/1lqRXiaI9bNPJM0970aTjiJ
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Demo access
+- **Admin:** `admin` / `demo`
+- **Committee:** `louise.white` / `demo`
+- **Applicant:** `applicant` / `demo`
+
+Sign-ins are now remembered in your browser, so refreshing the page keeps you on the correct dashboard until you log out.

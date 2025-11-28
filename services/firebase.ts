@@ -31,12 +31,27 @@ const db = app ? getFirestore(app) : null;
 
 // --- MOCK SERVICE (Local Storage) ---
 class MockService {
+  private readonly SESSION_KEY = 'pb_portal_user';
+
   private get<T>(key: string): T[] {
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : [];
   }
   private set<T>(key: string, data: T[]) {
     localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  private saveSession(user: User | null) {
+    if (user) {
+        localStorage.setItem(this.SESSION_KEY, JSON.stringify(user));
+    } else {
+        localStorage.removeItem(this.SESSION_KEY);
+    }
+  }
+
+  private loadSession(): User | null {
+    const raw = localStorage.getItem(this.SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
   }
 
   constructor() {
@@ -77,6 +92,7 @@ class MockService {
     
     if (user) {
         const { password, ...safeUser } = user;
+        this.saveSession(safeUser as User);
         return safeUser as User;
     }
     throw new Error("Invalid credentials. Try 'admin' / 'demo' or 'louise.white' / 'demo'");
@@ -100,8 +116,9 @@ class MockService {
     };
     
     this.set('users', [...users, newUser]);
-    
+
     const { password, ...safeUser } = newUser;
+    this.saveSession(safeUser as User);
     return safeUser as User;
   }
 
@@ -114,8 +131,13 @@ class MockService {
       const updatedUser = { ...users[idx], ...updates };
       users[idx] = updatedUser;
       this.set('users', users);
-      
+
       const { password, ...safeUser } = updatedUser;
+      // Keep session in sync if the current user updates their profile
+      const session = this.loadSession();
+      if (session && session.uid === uid) {
+          this.saveSession(safeUser as User);
+      }
       return safeUser as User;
   }
 
@@ -183,6 +205,15 @@ class MockService {
   async getUsers(): Promise<User[]> {
     const users = this.get<User>('users');
     return users.map(({ password, ...u }) => u); // Return without passwords
+  }
+
+  // --- SESSION HELPERS ---
+  getCurrentUser(): User | null {
+    return this.loadSession();
+  }
+
+  setCurrentUser(user: User | null) {
+    this.saveSession(user);
   }
 
   async adminCreateUser(user: User, pass: string): Promise<void> {
