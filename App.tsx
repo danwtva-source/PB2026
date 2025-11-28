@@ -20,6 +20,21 @@ function App() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    const stored = api.getCurrentUser();
+    if (stored) {
+        setCurrentUser(stored);
+        if (stored.role === 'admin') setCurrentPage('admin-dashboard');
+        else if (stored.role === 'committee') setCurrentPage('committee-dashboard');
+        else setCurrentPage('applicant-dashboard');
+    }
+  }, []);
+
+  const updateUser = (user: User) => {
+    setCurrentUser(user);
+    api.setCurrentUser(user);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -31,7 +46,7 @@ function App() {
         } else {
             user = await api.register(emailOrUsername, password, displayName);
         }
-        setCurrentUser(user);
+        updateUser(user);
         setIsAuthOpen(false);
         
         // Redirect logic
@@ -46,6 +61,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    api.setCurrentUser(null);
     setCurrentUser(null);
     setCurrentPage('home');
     setEmailOrUsername('');
@@ -77,11 +93,11 @@ function App() {
         if (currentUser.role === 'admin') {
             if (currentPage === 'committee-dashboard') {
                 // Admin masquerading as committee for scoring access
-                return <CommitteeDashboard 
-                    user={currentUser} 
-                    onUpdateUser={setCurrentUser} 
-                    isAdmin={true} 
-                    onReturnToAdmin={() => setCurrentPage('admin-dashboard')} 
+                return <CommitteeDashboard
+                    user={currentUser}
+                    onUpdateUser={updateUser}
+                    isAdmin={true}
+                    onReturnToAdmin={() => setCurrentPage('admin-dashboard')}
                 />;
             }
             // Allow admin to view public pages if requested
@@ -99,7 +115,7 @@ function App() {
             />;
         }
         
-        if (currentUser.role === 'committee') return <CommitteeDashboard user={currentUser} onUpdateUser={setCurrentUser} />;
+        if (currentUser.role === 'committee') return <CommitteeDashboard user={currentUser} onUpdateUser={updateUser} />;
         return <ApplicantDashboard user={currentUser} />;
     }
   };
